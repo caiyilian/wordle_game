@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="zh">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Web Wordle</title>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+
+<body>
+    <div class="app-container">
+        <header>
+            <h1>Web Wordle</h1>
+        </header>
+
+        <main>
+            <div class="game-section">
+                <div class="hint-section" id="hint-section" style="display: none;">
+                    <div class="hint-label">线索提示:</div>
+                    <div id="hint-container" class="hint-container">
+                        <!-- Hint blocks will go here -->
+                    </div>
+                </div>
+
+                <div class="game-area-container">
+                    <div class="game-label" id="game-label" style="display: none;">当前猜测:</div>
+                    <div id="game-grid" class="game-grid">
+                        <!-- Grid will be populated by JS -->
+                        <div class="placeholder-text">发送 "猜单词" 开始游戏</div>
+                    </div>
+                </div>
+
+                <div id="result-message" class="result-message"></div>
+            </div>
+
+            <div class="chat-section">
+                <div class="chat-header">聊天 / 记录</div>
+                <div id="chat-history" class="chat-history">
+                    <!-- Messages go here -->
+                </div>
+            </div>
+        </main>
+
+        <footer>
+            <div class="input-container">
+                <input type="text" id="messageInput" placeholder="输入 '猜单词' 开始，或发送聊天消息..." autocomplete="off">
+                <button id="sendBtn">发送</button>
+            </div>
+        </footer>
+    </div>
+    <script src="/static/script.js"></script>
+</body>
+
+</html>
