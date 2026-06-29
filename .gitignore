@@ -1,0 +1,53 @@
+# Secrets
+.github-token
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.egg-info/
+dist/
+build/
+*.egg
+
+# Databases
+*.db
+*.sqlite3
+
+# Generated images
+current_guess*.png
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Opencode internal
+.omo/
+
+# Codex exports
+rollout-*.jsonl
+
+# Codegraph (regeneratable)
+.codegraph/
+
+# Node
+node_modules/
+frontend/dist/
+frontend/.vite/
+miniapp/node_modules/
+miniapp/dist/
+
+# Virtual env
+venv/
+.venv/
+
+# Env files
+.env
+.env.local
+.env.*.local
