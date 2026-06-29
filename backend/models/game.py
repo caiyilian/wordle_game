@@ -15,12 +15,26 @@ class Room(Base):
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
     code: Mapped[str] = mapped_column(String(6), nullable=False, unique=True, index=True)
     name: Mapped[str] = mapped_column(String(50), nullable=False)
+    word_bank: Mapped[str] = mapped_column(String(20), nullable=False, default="CET4")
+    word_length: Mapped[int] = mapped_column(Integer, nullable=False, default=5)
     status: Mapped[str] = mapped_column(String(20), nullable=False, default="waiting")
     max_players: Mapped[int] = mapped_column(Integer, nullable=False, default=8)
     created_by: Mapped[str | None] = mapped_column(String(36), ForeignKey("users.id"), nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), nullable=False)
 
     games: Mapped[list["GameRecord"]] = relationship(back_populates="room")
+    members: Mapped[list["RoomMember"]] = relationship(back_populates="room", cascade="all, delete-orphan")
+
+
+class RoomMember(Base):
+    __tablename__ = "room_members"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
+    room_id: Mapped[str] = mapped_column(String(36), ForeignKey("rooms.id"), nullable=False, index=True)
+    user_id: Mapped[str] = mapped_column(String(36), ForeignKey("users.id"), nullable=False, index=True)
+    joined_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+
+    room: Mapped[Room] = relationship(back_populates="members")
 
 
 class GameRecord(Base):

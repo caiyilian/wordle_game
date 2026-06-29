@@ -4,7 +4,7 @@ from collections.abc import AsyncIterator
 from fastapi import FastAPI
 
 from database import init_database
-from routers import user
+from routers import room, user
 
 
 @asynccontextmanager
@@ -15,6 +15,7 @@ async def lifespan(_: FastAPI) -> AsyncIterator[None]:
 
 app = FastAPI(title="Wordle Game API", lifespan=lifespan)
 
+app.include_router(room.router)
 app.include_router(user.router)
 
 
