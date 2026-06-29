@@ -7,8 +7,8 @@ from main import app
 
 
 def _nick(base: str) -> str:
-    ts = int(time.time() * 1000) % 10000
-    return f"{base[:6]}{ts}"
+    ts = int(time.time() * 1000000) % 1000000
+    return f"{base[:4]}{ts}"
 
 
 def register(client: TestClient, base_nickname: str) -> str:
