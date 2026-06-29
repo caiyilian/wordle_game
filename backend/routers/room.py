@@ -11,6 +11,7 @@ from database import get_session
 from models import Room, RoomMember, User
 from routers.user import get_current_user
 from schemas.game import RoomCreate, RoomListResponse, RoomResponse
+from schemas.user import UserResponse
 
 
 router = APIRouter(prefix="/api/rooms", tags=["rooms"])
@@ -52,9 +53,12 @@ async def _room_response(room: Room, session: AsyncSession) -> RoomResponse:
         word_length=room.word_length,
         status=room.status,
         max_players=room.max_players,
+        max_guesses=room.max_guesses,
         player_count=await _player_count(room.id, session),
         created_by=room.created_by,
         created_at=room.created_at,
+        started_at=room.started_at,
+        finished_at=room.finished_at,
     )
 
 
@@ -76,6 +80,7 @@ async def create_room(
         word_bank=payload.word_bank,
         word_length=payload.word_length,
         max_players=payload.max_players,
+        max_guesses=payload.max_guesses,
         created_by=current_user.id,
     )
     session.add(room)

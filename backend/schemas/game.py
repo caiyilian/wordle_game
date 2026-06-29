@@ -11,6 +11,7 @@ class RoomCreate(BaseModel):
     word_bank: str = Field(default="CET4", min_length=1, max_length=20)
     word_length: int = Field(default=5, ge=3, le=10)
     max_players: int = Field(default=8, ge=1, le=20)
+    max_guesses: int = Field(default=6, ge=1, le=20)
 
 
 class RoomJoin(BaseModel):
@@ -25,9 +26,12 @@ class RoomResponse(BaseModel):
     word_length: int
     status: str
     max_players: int
+    max_guesses: int
     player_count: int
     created_by: Optional[str]
     created_at: datetime
+    started_at: Optional[datetime]
+    finished_at: Optional[datetime]
 
     model_config = {"from_attributes": True}
 

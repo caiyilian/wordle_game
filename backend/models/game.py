@@ -18,8 +18,11 @@ class Room(Base):
     word_length: Mapped[int] = mapped_column(Integer, nullable=False, default=5)
     status: Mapped[str] = mapped_column(String(20), nullable=False, default="waiting")
     max_players: Mapped[int] = mapped_column(Integer, nullable=False, default=8)
+    max_guesses: Mapped[int] = mapped_column(Integer, nullable=False, default=6)
     created_by: Mapped[Optional[str]] = mapped_column(String(36), ForeignKey("users.id"), nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+    started_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
+    finished_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
 
     games: Mapped[List["GameRecord"]] = relationship(back_populates="room")
     members: Mapped[List["RoomMember"]] = relationship(back_populates="room", cascade="all, delete-orphan")
