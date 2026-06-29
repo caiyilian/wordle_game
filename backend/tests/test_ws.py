@@ -1,10 +1,10 @@
 import time
+from typing import Dict
 
 from starlette.websockets import WebSocketDisconnect
 from fastapi.testclient import TestClient
 
 from main import app
-from core.security import create_access_token
 
 
 def _nick(base: str) -> str:
@@ -12,16 +12,20 @@ def _nick(base: str) -> str:
     return f"{base[:6]}{ts}"
 
 
-def _register_and_login(client: TestClient, base: str) -> str:
+def _register_and_login(client: TestClient, base: str) -> tuple:
     nick = _nick(base)
     client.post("/api/users/register", json={"nickname": nick, "password": "secret123"})
     resp = client.post("/api/users/login", json={"nickname": nick, "password": "secret123"})
-    return resp.json()["access_token"]
+    return resp.json()["access_token"], nick
+
+
+def auth_header(token: str) -> Dict[str, str]:
+    return {"Authorization": f"Bearer {token}"}
 
 
 def test_websocket_ping_pong() -> None:
     with TestClient(app) as client:
-        token = _register_and_login(client, "ws_user1")
+        token, _ = _register_and_login(client, "ws_user1")
         with client.websocket_connect(f"/ws/testroom?token={token}") as ws:
             ws.send_json({"type": "ping"})
             data = ws.receive_json()
