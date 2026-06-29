@@ -3,3 +3,8 @@ uvicorn[standard]
 pyspellchecker
 pytest
 httpx
+SQLAlchemy>=2.0
+alembic
+asyncpg
+aiosqlite
+python-dotenv
