@@ -23,3 +23,4 @@ class User(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), nullable=False)
 
     guesses: Mapped[List["PlayerGuess"]] = relationship(back_populates="user")
+    chat_messages: Mapped[List["ChatMessage"]] = relationship(back_populates="user")

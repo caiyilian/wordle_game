@@ -10,6 +10,7 @@ from core.word_loader import get_random_word
 from database import AsyncSessionLocal
 from ws.game_state import get_game_session, get_room_state, set_game_finished
 from ws.manager import manager
+from ws.utils import sanitize_message
 
 router = APIRouter(tags=["websocket"])
 
@@ -18,6 +19,19 @@ def _make_event(event_type: str, **kwargs: Any) -> dict[str, Any]:
     event: dict[str, Any] = {"type": event_type}
     event.update(kwargs)
     return event
+
+
+async def _get_nickname(user_id: str) -> str:
+    """Get user nickname from DB."""
+    session = AsyncSessionLocal()
+    try:
+        from sqlalchemy import select
+        from models import User
+        result = await session.execute(select(User.nickname).where(User.id == user_id))
+        nickname = result.scalar_one_or_none() or user_id
+        return nickname
+    finally:
+        await session.close()
 
 
 @router.websocket("/ws/{room_id}")
@@ -55,12 +69,7 @@ async def websocket_endpoint(
                 await _handle_guess(room_id, user_id, websocket, data)
 
             elif event_type == "chat":
-                message = data.get("message", "")
-                if message:
-                    await manager.broadcast(
-                        room_id,
-                        _make_event("chat", user_id=user_id, message=message),
-                    )
+                await _handle_chat(room_id, user_id, data)
 
             elif event_type == "leave":
                 break
@@ -73,6 +82,44 @@ async def websocket_endpoint(
             room_id,
             _make_event("player_left", user_id=user_id),
         )
+
+
+async def _handle_chat(
+    room_id: str,
+    user_id: str,
+    data: dict[str, Any],
+) -> None:
+    """Handle chat message: sanitize, save, broadcast."""
+    raw_message = data.get("message", "")
+    if not raw_message:
+        return
+
+    message = sanitize_message(raw_message)
+    if not message:
+        return
+
+    nickname = await _get_nickname(user_id)
+
+    # Save to DB
+    session = AsyncSessionLocal()
+    try:
+        from sqlalchemy import func
+        from models import ChatMessage
+        chat_msg = ChatMessage(
+            room_id=room_id,
+            user_id=user_id,
+            message=message,
+        )
+        session.add(chat_msg)
+        await session.commit()
+    finally:
+        await session.close()
+
+    # Broadcast to room
+    await manager.broadcast(
+        room_id,
+        _make_event("chat", user_id=user_id, nickname=nickname, message=message),
+    )
 
 
 async def _handle_start_game(

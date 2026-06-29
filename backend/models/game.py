@@ -26,6 +26,7 @@ class Room(Base):
 
     games: Mapped[List["GameRecord"]] = relationship(back_populates="room")
     members: Mapped[List["RoomMember"]] = relationship(back_populates="room", cascade="all, delete-orphan")
+    messages: Mapped[List["ChatMessage"]] = relationship(back_populates="room")
 
 
 class RoomMember(Base):
@@ -70,3 +71,16 @@ class PlayerGuess(Base):
 
     game: Mapped[GameRecord] = relationship(back_populates="guesses")
     user: Mapped["User"] = relationship(back_populates="guesses")
+
+
+class ChatMessage(Base):
+    __tablename__ = "chat_messages"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
+    room_id: Mapped[str] = mapped_column(String(36), ForeignKey("rooms.id"), nullable=False, index=True)
+    user_id: Mapped[str] = mapped_column(String(36), ForeignKey("users.id"), nullable=False, index=True)
+    message: Mapped[str] = mapped_column(Text, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+
+    room: Mapped[Room] = relationship(back_populates="messages")
+    user: Mapped["User"] = relationship()
