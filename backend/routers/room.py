@@ -1,4 +1,4 @@
-from __future__ import annotations
+from typing import Optional
 
 import random
 import string
@@ -58,7 +58,7 @@ async def _room_response(room: Room, session: AsyncSession) -> RoomResponse:
     )
 
 
-async def _membership(room_id: str, user_id: str, session: AsyncSession) -> RoomMember | None:
+async def _membership(room_id: str, user_id: str, session: AsyncSession) -> Optional[RoomMember]:
     return await session.scalar(
         select(RoomMember).where(RoomMember.room_id == room_id, RoomMember.user_id == user_id)
     )

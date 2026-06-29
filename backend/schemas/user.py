@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from datetime import datetime
+from typing import Dict, Optional
 
 from pydantic import BaseModel, Field
 
@@ -18,12 +19,12 @@ class UserLogin(BaseModel):
 class UserResponse(BaseModel):
     id: str
     nickname: str
-    avatar_url: str | None = None
+    avatar_url: Optional[str]
     total_games: int
     wins: int
     current_streak: int
     max_streak: int
-    guess_distribution: dict[str, int]
+    guess_distribution: Dict[str, int]
     created_at: datetime
 
     model_config = {"from_attributes": True}

@@ -1,17 +1,14 @@
-from __future__ import annotations
-
 import json
 import random
 from collections import defaultdict
 from pathlib import Path
-from typing import Any
+from typing import Any, Dict, List, Optional, Tuple
+
+WordEntry = Tuple[str, str]
+WordIndex = Dict[str, Dict[int, List[WordEntry]]]
 
 
-WordEntry = tuple[str, str]
-WordIndex = dict[str, dict[int, list[WordEntry]]]
-
-
-def _candidate_words_dirs() -> list[Path]:
+def _candidate_words_dirs() -> List[Path]:
     backend_dir = Path(__file__).resolve().parents[1]
     project_dir = backend_dir.parent
     return [
@@ -34,9 +31,9 @@ def _extract_meaning(raw_entry: Any) -> str:
     return str(raw_entry)
 
 
-def load_word_banks(words_dir: Path | None = None) -> WordIndex:
+def load_word_banks(words_dir: Optional[Path] = None) -> WordIndex:
     source_dir = words_dir or _resolve_words_dir()
-    index: dict[str, dict[int, list[WordEntry]]] = defaultdict(lambda: defaultdict(list))
+    index: Dict[str, Dict[int, List[WordEntry]]] = defaultdict(lambda: defaultdict(list))
 
     for path in sorted(source_dir.glob("*.json")):
         with path.open("r", encoding="utf-8") as handle:
@@ -56,11 +53,11 @@ def load_word_banks(words_dir: Path | None = None) -> WordIndex:
 WORD_BANKS: WordIndex = load_word_banks()
 
 
-def list_word_banks() -> list[str]:
+def list_word_banks() -> List[str]:
     return sorted(WORD_BANKS)
 
 
-def get_available_word_lengths(word_bank: str | None = None) -> list[int]:
+def get_available_word_lengths(word_bank: Optional[str] = None) -> List[int]:
     if word_bank is not None:
         return sorted(WORD_BANKS.get(word_bank, {}))
 

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from datetime import datetime
+from typing import Dict, List, Optional
 
 from pydantic import BaseModel, Field
 
@@ -25,14 +26,14 @@ class RoomResponse(BaseModel):
     status: str
     max_players: int
     player_count: int
-    created_by: str | None
+    created_by: Optional[str]
     created_at: datetime
 
     model_config = {"from_attributes": True}
 
 
 class RoomListResponse(BaseModel):
-    items: list[RoomResponse]
+    items: List[RoomResponse]
     total: int
     page: int
     page_size: int
