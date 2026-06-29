@@ -1,7 +1,6 @@
-from __future__ import annotations
-
 import uuid
 from datetime import datetime
+from typing import List, Optional
 
 from sqlalchemy import DateTime, ForeignKey, Integer, JSON, String, Text, func
 from sqlalchemy.orm import Mapped, mapped_column, relationship
@@ -19,11 +18,11 @@ class Room(Base):
     word_length: Mapped[int] = mapped_column(Integer, nullable=False, default=5)
     status: Mapped[str] = mapped_column(String(20), nullable=False, default="waiting")
     max_players: Mapped[int] = mapped_column(Integer, nullable=False, default=8)
-    created_by: Mapped[str | None] = mapped_column(String(36), ForeignKey("users.id"), nullable=True)
+    created_by: Mapped[Optional[str]] = mapped_column(String(36), ForeignKey("users.id"), nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), nullable=False)
 
-    games: Mapped[list["GameRecord"]] = relationship(back_populates="room")
-    members: Mapped[list["RoomMember"]] = relationship(back_populates="room", cascade="all, delete-orphan")
+    games: Mapped[List["GameRecord"]] = relationship(back_populates="room")
+    members: Mapped[List["RoomMember"]] = relationship(back_populates="room", cascade="all, delete-orphan")
 
 
 class RoomMember(Base):
@@ -49,10 +48,10 @@ class GameRecord(Base):
     max_guesses: Mapped[int] = mapped_column(Integer, nullable=False)
     status: Mapped[str] = mapped_column(String(20), nullable=False, default="playing")
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), nullable=False)
-    finished_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    finished_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
 
     room: Mapped[Room] = relationship(back_populates="games")
-    guesses: Mapped[list["PlayerGuess"]] = relationship(back_populates="game")
+    guesses: Mapped[List["PlayerGuess"]] = relationship(back_populates="game")
 
 
 class PlayerGuess(Base):
@@ -62,7 +61,7 @@ class PlayerGuess(Base):
     game_id: Mapped[str] = mapped_column(String(36), ForeignKey("game_records.id"), nullable=False, index=True)
     user_id: Mapped[str] = mapped_column(String(36), ForeignKey("users.id"), nullable=False, index=True)
     guess_word: Mapped[str] = mapped_column(String(20), nullable=False)
-    colors: Mapped[list[str]] = mapped_column(JSON, nullable=False)
+    colors: Mapped[List[str]] = mapped_column(JSON, nullable=False)
     guess_number: Mapped[int] = mapped_column(Integer, nullable=False)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), nullable=False)
 
