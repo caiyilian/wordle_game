@@ -1,15 +1,23 @@
+import time
+from typing import Dict
+
 from fastapi.testclient import TestClient
 
 from main import app
 
 
-def register(client: TestClient, nickname: str) -> str:
-    response = client.post("/api/users/register", json={"nickname": nickname, "password": "secret123"})
-    assert response.status_code == 201
+def _nick(base: str) -> str:
+    ts = int(time.time() * 1000) % 10000
+    return f"{base[:6]}{ts}"
+
+
+def register(client: TestClient, base_nickname: str) -> str:
+    response = client.post("/api/users/register", json={"nickname": _nick(base_nickname), "password": "secret123"})
+    assert response.status_code == 201, f"Register failed: {response.json()}"
     return response.json()["access_token"]
 
 
-def auth(token: str) -> dict[str, str]:
+def auth(token: str) -> Dict[str, str]:
     return {"Authorization": f"Bearer {token}"}
 
 
@@ -35,9 +43,9 @@ def test_create_list_and_get_room() -> None:
 
 def test_join_duplicate_join_full_and_leave_room() -> None:
     with TestClient(app) as client:
-        owner_token = register(client, "p4_owner_full")
-        second_token = register(client, "p4_second")
-        third_token = register(client, "p4_third")
+        owner_token = register(client, "p4_own1")
+        second_token = register(client, "p4_sec2")
+        third_token = register(client, "p4_thr3")
         room = client.post(
             "/api/rooms",
             headers=auth(owner_token),
