@@ -7,7 +7,7 @@ import sys
 from database import Base, init_database
 
 
-EXPECTED_TABLES = {"users", "rooms", "game_records", "player_guesses"}
+EXPECTED_TABLES = {"users", "rooms", "room_members", "game_records", "player_guesses"}
 
 
 def test_metadata_contains_expected_tables() -> None:
