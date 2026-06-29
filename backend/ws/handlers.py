@@ -21,8 +21,35 @@ def _make_event(event_type: str, **kwargs: Any) -> dict[str, Any]:
     return event
 
 
+def _compute_hint(answer: str, guesses: list) -> str:
+    """Compute hint based on all guesses made so far.
+    Shows letters that have been correctly identified as green,
+    and marks letters that appeared in yellow/gray positions.
+    """
+    revealed = ["*"] * len(answer)
+    known_positions = {}  # letter -> set of positions where it is green
+
+    for guess_entry in guesses:
+        word = guess_entry.get("word", "")
+        colors = guess_entry.get("colors", [])
+        for i, (letter, color) in enumerate(zip(word, colors)):
+            if color == "green":
+                revealed[i] = letter
+                known_positions.setdefault(letter, set()).add(i)
+
+    # Also mark letters that we know are NOT in the word
+    known_wrong = set()
+    for guess_entry in guesses:
+        word = guess_entry.get("word", "")
+        colors = guess_entry.get("colors", [])
+        for letter, color in zip(word, colors):
+            if color == "gray":
+                known_wrong.add(letter)
+
+    return "".join(revealed)
+
+
 async def _get_nickname(user_id: str) -> str:
-    """Get user nickname from DB."""
     session = AsyncSessionLocal()
     try:
         from sqlalchemy import select
@@ -68,6 +95,9 @@ async def websocket_endpoint(
             elif event_type == "guess":
                 await _handle_guess(room_id, user_id, websocket, data)
 
+            elif event_type == "hint":
+                await _handle_hint(room_id, user_id, websocket)
+
             elif event_type == "chat":
                 await _handle_chat(room_id, user_id, data)
 
@@ -84,12 +114,31 @@ async def websocket_endpoint(
         )
 
 
+async def _handle_hint(
+    room_id: str,
+    user_id: str,
+    ws: WebSocket,
+) -> None:
+    """Handle hint request."""
+    game_session = get_game_session(room_id)
+    if not game_session or game_session.status != "playing":
+        await ws.send_json(_make_event("error", message="No active game"))
+        return
+
+    hint = _compute_hint(game_session.answer_word, game_session.guess_history)
+    nickname = await _get_nickname(user_id)
+
+    await manager.broadcast(
+        room_id,
+        _make_event("hint", user_id=user_id, nickname=nickname, hint=hint),
+    )
+
+
 async def _handle_chat(
     room_id: str,
     user_id: str,
     data: dict[str, Any],
 ) -> None:
-    """Handle chat message: sanitize, save, broadcast."""
     raw_message = data.get("message", "")
     if not raw_message:
         return
@@ -100,10 +149,8 @@ async def _handle_chat(
 
     nickname = await _get_nickname(user_id)
 
-    # Save to DB
     session = AsyncSessionLocal()
     try:
-        from sqlalchemy import func
         from models import ChatMessage
         chat_msg = ChatMessage(
             room_id=room_id,
@@ -115,7 +162,6 @@ async def _handle_chat(
     finally:
         await session.close()
 
-    # Broadcast to room
     await manager.broadcast(
         room_id,
         _make_event("chat", user_id=user_id, nickname=nickname, message=message),
