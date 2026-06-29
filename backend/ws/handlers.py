@@ -273,10 +273,39 @@ async def _handle_guess(
             ),
         )
 
+        # Persist game record to DB
         session = AsyncSessionLocal()
         try:
             from sqlalchemy import update, func
-            from models import Room
+            from models import GameRecord, PlayerGuess, Room
+            # Create game record
+            game_record = GameRecord(
+                room_id=room_id,
+                word_bank=game_session.word_bank,
+                answer_word=game_session.answer_word,
+                meaning=game_session.meaning,
+                word_length=game_session.word_length,
+                max_guesses=game_session.max_guesses,
+                status="win" if won else "loss",
+                finished_at=func.now(),
+            )
+            session.add(game_record)
+            await session.flush()
+
+            # Save individual guesses
+            for guess_entry in game_session.guess_history:
+                pg = PlayerGuess(
+                    game_id=game_record.id,
+                    user_id=guess_entry["user_id"],
+                    guess_word=guess_entry["word"],
+                    colors=guess_entry["colors"],
+                    guess_number=guess_entry["number"],
+                )
+                session.add(pg)
+
+            await session.commit()
+
+            # Update room status
             await session.execute(
                 update(Room)
                 .where(Room.id == room_id)
