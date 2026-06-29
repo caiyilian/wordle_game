@@ -8,3 +8,4 @@ alembic
 asyncpg
 aiosqlite
 python-dotenv
+PyJWT
