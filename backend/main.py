@@ -5,6 +5,7 @@ from fastapi import FastAPI
 
 from database import init_database
 from routers import room, user
+from routers.achievement import router as achievement_router
 from routers.daily import router as daily_router
 from routers.game import router as game_router
 from routers.leaderboard import router as leaderboard_router
@@ -20,6 +21,7 @@ async def lifespan(_: FastAPI) -> AsyncIterator[None]:
 
 app = FastAPI(title="Wordle Game API", lifespan=lifespan)
 
+app.include_router(achievement_router)
 app.include_router(room.router)
 app.include_router(user.router)
 app.include_router(game_router)
