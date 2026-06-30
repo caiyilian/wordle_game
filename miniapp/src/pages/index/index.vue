@@ -7,6 +7,7 @@
       <input v-model="password" type="password" placeholder="Password" class="input" />
       <button @click="login" class="btn btn-primary">Login</button>
       <button @click="register" class="btn btn-secondary">Register</button>
+      <button @click="wechatLogin" class="btn btn-wechat">WeChat Login</button>
     </view>
 
     <view v-else class="game-section">
@@ -15,12 +16,13 @@
         <input v-model="roomCode" placeholder="Room Code" class="input" />
         <button @click="joinRoom" class="btn btn-secondary">Join</button>
       </view>
+      <button @click="goStats" class="btn btn-stats">My Statistics</button>
     </view>
   </view>
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, onMounted } from 'vue'
 
 const token = ref('')
 const nickname = ref('')
@@ -28,6 +30,11 @@ const password = ref('')
 const roomCode = ref('')
 
 const API_BASE = 'http://localhost:8000'
+
+onMounted(() => {
+  const saved = uni.getStorageSync('token')
+  if (saved) token.value = saved
+})
 
 async function login() {
   const res = await uni.request({
@@ -39,6 +46,7 @@ async function login() {
     const data = res.data as any
     token.value = data.access_token
     uni.setStorageSync('token', data.access_token)
+    uni.setStorageSync('nickname', data.user?.nickname || nickname.value)
   }
 }
 
@@ -52,7 +60,12 @@ async function register() {
     const data = res.data as any
     token.value = data.access_token
     uni.setStorageSync('token', data.access_token)
+    uni.setStorageSync('nickname', data.user?.nickname || nickname.value)
   }
+}
+
+function wechatLogin() {
+  uni.showToast({ title: 'WeChat login coming soon', icon: 'none' })
 }
 
 async function createRoom() {
@@ -72,12 +85,9 @@ async function joinRoom() {
   uni.navigateTo({ url: '/pages/game/index?code=' + roomCode.value })
 }
 
-onMounted(() => {
-  const saved = uni.getStorageSync('token')
-  if (saved) token.value = saved
-})
-
-import { onMounted } from 'vue'
+function goStats() {
+  uni.navigateTo({ url: '/pages/stats/index' })
+}
 </script>
 
 <style scoped>
@@ -88,6 +98,8 @@ import { onMounted } from 'vue'
 .btn { padding: 24rpx; border-radius: 12rpx; font-size: 28rpx; text-align: center; }
 .btn-primary { background: #4a90d9; color: white; }
 .btn-secondary { background: #67c23a; color: white; }
+.btn-wechat { background: #07c160; color: white; }
+.btn-stats { background: #8b5cf6; color: white; }
 .join-section { display: flex; gap: 20rpx; }
 .join-section .input { flex: 1; }
 </style>
