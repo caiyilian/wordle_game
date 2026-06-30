@@ -143,7 +143,7 @@ onMounted(async () => {
       axios.get('/api/users/me/stats'),
     ])
     Object.assign(stats.value, statsResp.data)
-    leaders.value = leaderResp.data.items || []
+    leaders.value = leaderResp.data || []
     recentGames.value = recentResp.data.recent_games || []
   } catch {
     // Fallback to mock
@@ -161,7 +161,7 @@ import { watch } from 'vue'
 watch(leaderTab, async () => {
   try {
     const resp = await axios.get('/api/leaderboard', { params: { type: leaderTab.value } })
-    leaders.value = resp.data.items || []
+    leaders.value = resp.data || []
   } catch { /* keep current */ }
 })
 </script>
