@@ -1,7 +1,8 @@
 {
   "pages": [
     {"path": "pages/index/index", "style": {"navigationBarTitleText": "Wordle"}},
-    {"path": "pages/game/index", "style": {"navigationBarTitleText": "Game"}}
+    {"path": "pages/game/index", "style": {"navigationBarTitleText": "Game"}},
+    {"path": "pages/stats/index", "style": {"navigationBarTitleText": "Statistics"}}
   ],
   "globalStyle": {
     "navigationBarTextStyle": "black",
