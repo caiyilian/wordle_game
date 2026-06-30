@@ -1,6 +1,6 @@
 ﻿import { defineStore } from 'pinia'
 import { ref } from 'vue'
-import type { GuessResult, GameState } from '@/types/game'
+import type { ColorResult, GuessResult, GameState } from '@/types/game'
 
 export const useGameStore = defineStore('game', () => {
   const state = ref<GameState>({
@@ -12,7 +12,7 @@ export const useGameStore = defineStore('game', () => {
   })
 
   const currentRow = ref('')
-  const keyStates = ref<Record<string, string>>({})
+  const keyStates = ref<Record<string, ColorResult>>({})
 
   function addLetter(letter: string) {
     if (currentRow.value.length < state.value.wordLength) {
@@ -24,17 +24,28 @@ export const useGameStore = defineStore('game', () => {
     currentRow.value = currentRow.value.slice(0, -1)
   }
 
-  function submitGuess(colors: string[]) {
+  function submitGuess(colors: ColorResult[]) {
+    const guessWord = currentRow.value.toLowerCase()
+    if (guessWord.length !== state.value.wordLength) return
+
     state.value.guesses.push({
-      word: currentRow.value.toLowerCase(),
-      colors: colors as any,
+      word: guessWord,
+      colors,
       number: state.value.guesses.length + 1,
       userId: '',
     })
+
+    // Update keyboard colors - only upgrade (gray -> yellow -> green)
+    for (let i = 0; i < colors.length; i++) {
+      const letter = guessWord[i].toUpperCase()
+      const current = keyStates.value[letter]
+      const priority: Record<string, number> = { gray: 0, yellow: 1, green: 2 }
+      if (current === undefined || priority[colors[i]] > priority[current]) {
+        keyStates.value[letter] = colors[i]
+      }
+    }
+
     currentRow.value = ''
-    // Update key states
-    const guess = currentRow.value || state.value.guesses[state.value.guesses.length - 1].word
-    // Simplified key state update
   }
 
   function reset() {
@@ -50,4 +61,10 @@ export const useGameStore = defineStore('game', () => {
   }
 
   return { state, currentRow, keyStates, addLetter, removeLetter, submitGuess, reset }
+}, {
+  persist: {
+    key: 'wordle_game_store',
+    storage: localStorage,
+    pick: ['state', 'currentRow', 'keyStates'],
+  },
 })
