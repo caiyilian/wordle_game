@@ -1,10 +1,10 @@
 <template>
   <div
-    class="cell w-14 h-14 sm:w-16 sm:h-16 border-2 flex items-center justify-center text-2xl font-bold rounded select-none transition-colors duration-300"
-    :class="cellClasses"
-    :style="{ animationDelay: delay + 'ms' }"
+    class="cell w-14 h-14 sm:w-16 sm:h-16 border-2 flex items-center justify-center text-2xl font-bold rounded select-none"
+    :class="[cellClasses, { revealing: revealing }]"
+    :style="{ animationDelay: (revealing ? delay : 0) + 'ms' }"
   >
-    {{ letter.toUpperCase() }}
+    <span class="cell-letter">{{ letter.toUpperCase() }}</span>
   </div>
 </template>
 
@@ -16,9 +16,13 @@ const props = defineProps<{
   letter: string
   color: ColorResult | null
   delay?: number
+  revealing?: boolean
 }>()
 
 const cellClasses = computed(() => {
+  if (props.revealing && props.color === 'green') return 'bg-wordle-green text-white border-wordle-green flip-green'
+  if (props.revealing && props.color === 'yellow') return 'bg-wordle-yellow text-white border-wordle-yellow flip-yellow'
+  if (props.revealing && props.color === 'gray') return 'bg-wordle-gray text-white border-wordle-gray flip-gray'
   if (props.color === 'green') return 'bg-wordle-green text-white border-wordle-green'
   if (props.color === 'yellow') return 'bg-wordle-yellow text-white border-wordle-yellow'
   if (props.color === 'gray') return 'bg-wordle-gray text-white border-wordle-gray'
@@ -29,6 +33,33 @@ const cellClasses = computed(() => {
 
 <style scoped>
 .cell {
+  perspective: 1000px;
+}
+.cell-letter {
+  display: inline-block;
+}
+.revealing {
+  animation: flip 0.4s ease-in-out forwards;
+}
+.revealing .cell-letter {
+  animation: fadeColor 0.4s ease-in-out forwards;
+}
+
+@keyframes flip {
+  0% { transform: rotateX(0deg); }
+  49% { transform: rotateX(-90deg); }
+  50% { transform: rotateX(-90deg); }
+  100% { transform: rotateX(0deg); }
+}
+
+@keyframes fadeColor {
+  0%, 49% { opacity: 0; }
+  50% { opacity: 0; }
+  100% { opacity: 1; }
+}
+
+/* Initial pop animation for non-revealing cells */
+.cell:not(.revealing) {
   animation: pop 0.2s ease-out;
 }
 @keyframes pop {
