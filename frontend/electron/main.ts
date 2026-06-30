@@ -1,5 +1,9 @@
 import { app, BrowserWindow } from 'electron'
 import { resolve } from 'path'
+import { fileURLToPath } from 'url'
+
+const __filename = fileURLToPath(import.meta.url)
+const __dirname = resolve(__filename, '..')
 
 function createWindow() {
   const win = new BrowserWindow({
