@@ -5,7 +5,8 @@
       :key="i"
       :letter="letters[i - 1] || ''"
       :color="(colors && colors[i - 1]) || null"
-      :delay="isCurrent ? 0 : (i - 1) * 150"
+      :delay="(i - 1) * 300"
+      :revealing="revealing"
     />
   </div>
 </template>
@@ -18,5 +19,6 @@ defineProps<{
   letters: string[]
   colors?: ColorResult[] | null
   isCurrent?: boolean
+  revealing?: boolean
 }>()
 </script>
