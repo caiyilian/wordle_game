@@ -320,6 +320,7 @@ async def _handle_guess(
 
             # Update user stats for all players in this game
             from core.scoring import update_user_stats
+            from core.achievements import check_achievements
             from models import User
 
             # Get unique users who made guesses
@@ -349,6 +350,9 @@ async def _handle_guess(
                     "total_score": 0,
                 }
 
+                # Check achievements before update (to detect new unlocks)
+                prev_achievements = {a["id"] for a in check_achievements(current_stats)}
+
                 is_winner = uid == winner_id if won else False
                 new_stats = update_user_stats(
                     current_stats,
@@ -362,6 +366,29 @@ async def _handle_guess(
                 u.current_streak = new_stats["current_streak"]
                 u.max_streak = new_stats["max_streak"]
                 u.guess_distribution = new_stats["guess_distribution"]
+
+                # Check achievements after update
+                post_stats = {
+                    "total_games": u.total_games,
+                    "wins": u.wins,
+                    "current_streak": u.current_streak,
+                    "max_streak": u.max_streak,
+                    "guess_distribution": u.guess_distribution or {},
+                }
+                post_achievements = check_achievements(post_stats)
+                newly_unlocked = [a for a in post_achievements if a["id"] not in prev_achievements]
+
+                if newly_unlocked:
+                    nickname = await _get_nickname(uid)
+                    await manager.broadcast(
+                        room_id,
+                        _make_event(
+                            "achievement_unlocked",
+                            user_id=uid,
+                            nickname=nickname,
+                            achievements=newly_unlocked,
+                        ),
+                    )
 
             await session.commit()
         finally:
