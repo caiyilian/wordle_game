@@ -1,57 +1,169 @@
 <template>
   <view class="container">
-    <text class="room-title">Room: {{ roomCode }}</text>
-    <view class="board">
-      <view v-for="(row, ri) in displayRows" :key="ri" class="row">
-        <view v-for="(cell, ci) in row" :key="ci" class="cell" :class="'color-' + (cell.color || 'empty')">
-          <text>{{ cell.letter }}</text>
-        </view>
+    <view class="header">
+      <text class="room-title">Room: {{ roomStore.roomCode }}</text>
+      <view class="status-row">
+        <text class="players">Players: {{ roomStore.players.join(', ') || 'Waiting...' }}</text>
+        <text v-if="wsConnected" class="connected">● Connected</text>
+        <text v-else class="disconnected">● Disconnected</text>
       </view>
     </view>
+
+    <!-- Game Board -->
+    <GameBoard
+      :guesses="gameStore.guesses"
+      :current-row="gameStore.currentRow"
+      :word-length="gameStore.wordLength"
+      :max-guesses="gameStore.maxGuesses"
+    />
+
+    <!-- Keyboard -->
+    <VirtualKeyboard
+      :keyboard-colors="gameStore.keyboardColors"
+      @keypress="onKey"
+    />
+
+    <!-- Chat -->
+    <ChatPanel
+      :messages="chatMessages"
+      :can-send="wsConnected"
+      @send="onChatSend"
+    />
   </view>
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, onUnmounted } from 'vue'
+import { onLoad } from '@dcloudio/uni-app'
+import { useUserStore } from '@/store/user'
+import { useRoomStore } from '@/store/room'
+import { useGameStore } from '@/store/game'
+import { wsClient, type WSMessageHandlers } from '@/api/websocket'
+import GameBoard from '@/components/GameBoard.vue'
+import VirtualKeyboard from '@/components/VirtualKeyboard.vue'
+import ChatPanel from '@/components/ChatPanel.vue'
 
-const roomCode = ref('')
-const guesses = ref<any[]>([])
-const currentRow = ref('')
-const wordLength = ref(5)
-const maxGuesses = ref(6)
+const userStore = useUserStore()
+const roomStore = useRoomStore()
+const gameStore = useGameStore()
 
-const displayRows = computed(() => {
-  const rows = []
-  for (let i = 0; i < maxGuesses.value; i++) {
-    if (i < guesses.value.length) {
-      const g = guesses.value[i]
-      rows.push(g.word.split('').map((l: string, j: number) => ({ letter: l, color: g.colors[j] })))
-    } else if (i === guesses.value.length) {
-      rows.push(currentRow.value.padEnd(wordLength.value, ' ').split('').map(l => ({ letter: l, color: null })))
-    } else {
-      rows.push(Array(wordLength.value).fill(null).map(() => ({ letter: '', color: null })))
-    }
+const wsConnected = ref(false)
+const chatMessages = ref<Array<{id: number; type?: string; content: string; nickname?: string}>>([])
+
+function addChatMsg(type: string, content: string, nickname?: string) {
+  chatMessages.value.push({ id: Date.now(), type, content, nickname })
+}
+
+const handlers: WSMessageHandlers = {
+  onGuessResult(data) {
+    gameStore.submitGuess(data.colors, data.user_id)
+    addChatMsg('system', (data.nickname || 'Someone') + ' guessed ' + data.word)
+  },
+  onGameOver(data) {
+    gameStore.endGame(data)
+    addChatMsg('system', 'Game over! Answer: ' + data.answer + '. Winner: ' + (data.winner_nickname || 'Nobody'))
+  },
+  onGameStart(data) {
+    gameStore.startGame(data)
+    addChatMsg('system', 'Game started! Guess the ' + data.word_length + '-letter word!')
+  },
+  onPlayerJoined(data) {
+    roomStore.addPlayer(data.nickname)
+    addChatMsg('system', data.nickname + ' joined')
+  },
+  onPlayerLeft(data) {
+    roomStore.removePlayer(data.nickname)
+    addChatMsg('system', data.nickname + ' left')
+  },
+  onChat(data) {
+    addChatMsg('chat', data.message, data.nickname)
+  },
+  onConnected() {
+    wsConnected.value = true
+  },
+  onDisconnected() {
+    wsConnected.value = false
+  },
+  onError(data) {
+    addChatMsg('system', 'Error: ' + (data.message || 'Unknown'))
+  },
+}
+
+let roomCode = ''
+
+onLoad((options) => {
+  roomCode = options?.code || ''
+  roomStore.roomCode = roomCode
+
+  // Get room info
+  const token = userStore.token
+  if (!token || !roomCode) {
+    uni.navigateTo({ url: '/pages/index/index' })
+    return
   }
-  return rows
+
+  uni.request({
+    url: 'http://localhost:8000/api/rooms/' + roomCode,
+    header: { Authorization: 'Bearer ' + token },
+    success(res: any) {
+      if (res.statusCode === 200) {
+        const data = res.data
+        roomStore.setRoom(data)
+        gameStore.wordLength = data.word_length
+        gameStore.maxGuesses = data.max_guesses
+      }
+    },
+    complete() {
+      // Connect WebSocket
+      wsClient.connect(roomCode, token, handlers)
+    }
+  })
 })
 
-import { computed } from 'vue'
-
-onMounted(() => {
-  const pages = getCurrentPages()
-  const page = pages[pages.length - 1] as any
-  roomCode.value = page.$page?.options?.code || ''
+onUnmounted(() => {
+  wsClient.disconnect()
 })
+
+function onKey(key: string) {
+  if (!wsConnected.value) return
+  if (key === 'ENTER') {
+    if (gameStore.currentRow.length === gameStore.wordLength) {
+      wsClient.send('guess', { word: gameStore.currentRow })
+    }
+  } else if (key === 'BACKSPACE') {
+    gameStore.removeLetter()
+  } else {
+    gameStore.addLetter(key)
+  }
+}
+
+function onChatSend(text: string) {
+  wsClient.send('chat', { message: text })
+}
 </script>
 
 <style scoped>
-.container { padding: 20rpx; }
-.room-title { font-size: 32rpx; font-weight: bold; text-align: center; margin-bottom: 40rpx; }
-.board { display: flex; flex-direction: column; align-items: center; gap: 8rpx; }
-.row { display: flex; gap: 8rpx; }
-.cell { width: 80rpx; height: 80rpx; border: 2rpx solid #ddd; display: flex; align-items: center; justify-content: center; font-size: 36rpx; font-weight: bold; border-radius: 8rpx; }
-.color-green { background: #86a373; color: white; border-color: #86a373; }
-.color-yellow { background: #c6b66d; color: white; border-color: #c6b66d; }
-.color-gray { background: #7b7b7c; color: white; border-color: #7b7b7c; }
-.color-empty { background: white; }
+.container {
+  padding: 20rpx;
+  display: flex;
+  flex-direction: column;
+  gap: 20rpx;
+}
+.header {
+  text-align: center;
+}
+.room-title {
+  font-size: 32rpx;
+  font-weight: bold;
+}
+.status-row {
+  display: flex;
+  justify-content: center;
+  gap: 16rpx;
+  font-size: 24rpx;
+  margin-top: 8rpx;
+}
+.connected { color: #22c55e; }
+.disconnected { color: #ef4444; }
+.players { color: #6b7280; }
 </style>
