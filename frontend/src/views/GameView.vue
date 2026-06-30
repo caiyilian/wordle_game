@@ -47,24 +47,12 @@
       </div>
 
       <!-- Right: Chat Panel -->
-      <div class="lg:w-72 bg-white dark:bg-gray-800 rounded-xl shadow-lg p-4 flex flex-col">
-        <h3 class="font-semibold mb-3 text-gray-700 dark:text-gray-200">Chat</h3>
-        <div ref="chatRef" class="flex-1 overflow-y-auto space-y-2 mb-3 text-sm min-h-[16rem] max-h-80">
-          <div v-for="msg in chatMessages" :key="msg.id"
-               class="p-2 rounded-lg"
-               :class="msg.type === 'system' ? 'bg-yellow-50 dark:bg-yellow-900/20 text-yellow-700 dark:text-yellow-300' : 'bg-gray-50 dark:bg-gray-700/50'">
-            <span v-if="msg.type !== 'system'" class="font-medium text-gray-700 dark:text-gray-200">{{ msg.nickname || msg.userId }}:</span>
-            <span class="text-gray-600 dark:text-gray-300 ml-1">{{ msg.content }}</span>
-          </div>
-        </div>
-        <div class="flex gap-2">
-          <input v-model="chatInput" @keyup.enter="sendChat" placeholder="Type a message..."
-                 class="flex-1 px-3 py-1.5 border border-gray-300 dark:border-gray-600 rounded-lg text-sm dark:bg-gray-700 dark:text-gray-200 outline-none focus:ring-2 focus:ring-blue-400" />
-          <button @click="sendChat" :disabled="!wsConnected"
-                  class="bg-blue-500 text-white px-3 py-1.5 rounded-lg text-sm hover:bg-blue-600 disabled:opacity-50">
-            Send
-          </button>
-        </div>
+      <div class="lg:w-72">
+        <ChatPanel
+          :messages="chatMessages"
+          :can-send="wsConnected"
+          @send="onChatSend"
+        />
       </div>
     </div>
   </div>
@@ -78,6 +66,7 @@ import { useGameStore } from '@/stores/game'
 import { useWebSocket } from '@/composables/useWebSocket'
 import GameBoard from '@/components/GameBoard.vue'
 import VirtualKeyboard from '@/components/VirtualKeyboard.vue'
+import ChatPanel from '@/components/ChatPanel.vue'
 
 const route = useRoute()
 const router = useRouter()
@@ -88,8 +77,6 @@ const roomCode = ref(route.params.id as string)
 const wordBank = ref('CET4')
 const players = ref<string[]>([])
 const chatMessages = ref<Array<{id: number; type?: string; userId?: string; nickname?: string; content: string}>>([])
-const chatInput = ref('')
-const chatRef = ref<HTMLElement>()
 
 // WebSocket
 const wsConnected = ref(false)
@@ -144,11 +131,6 @@ const roomOwner = ref<string>('')
 
 function addChatMsg(type: string, content: string, nickname?: string, userId?: string) {
   chatMessages.value.push({ id: Date.now(), type, content, nickname, userId })
-  nextTick(() => {
-    if (chatRef.value) {
-      chatRef.value.scrollTop = chatRef.value.scrollHeight
-    }
-  })
 }
 
 const isRoomOwner = computed(() => {
@@ -173,10 +155,9 @@ function onKeyBackspace() {
   gameStore.removeLetter()
 }
 
-function sendChat() {
-  if (!chatInput.value.trim() || !wsConnected.value) return
-  send('chat', { message: chatInput.value.trim() })
-  chatInput.value = ''
+function onChatSend(text: string) {
+  if (!wsConnected.value) return
+  send('chat', { message: text })
 }
 
 function leaveRoom() {
