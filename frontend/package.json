@@ -1,6 +1,10 @@
 {
-  "name": "frontend",
+  "name": "web-wordle",
+  "version": "1.0.0",
   "private": true,
+  "description": "Wordle Game - Electron Desktop App",
+  "author": "caiyilian",
+  "main": "dist-electron/main.js",
   "version": "1.0.0",
   "type": "module",
   "scripts": {
