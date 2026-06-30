@@ -47,7 +47,7 @@
       </div>
 
       <!-- Right: Chat Panel -->
-      <div class="lg:w-72">
+      <div class="lg:w-72 hidden lg:block">
         <ChatPanel
           :messages="chatMessages"
           :can-send="wsConnected"
@@ -55,6 +55,30 @@
         />
       </div>
     </div>
+
+    <!-- Mobile chat toggle -->
+    <button v-if="!showMobileChat" @click="showMobileChat = true"
+            class="lg:hidden fixed bottom-4 right-4 bg-blue-500 text-white w-12 h-12 rounded-full shadow-lg flex items-center justify-center text-xl z-40">
+      💬
+    </button>
+
+    <!-- Mobile chat drawer -->
+    <Teleport to="body">
+      <div v-if="showMobileChat" class="lg:hidden fixed inset-0 z-50 bg-black/40" @click="showMobileChat = false">
+        <div class="absolute bottom-0 left-0 right-0 bg-white dark:bg-gray-800 rounded-t-2xl p-4 max-h-[60vh] overflow-auto"
+             @click.stop>
+          <div class="flex justify-between items-center mb-3">
+            <h3 class="font-semibold text-gray-700 dark:text-gray-200">Chat</h3>
+            <button @click="showMobileChat = false" class="text-gray-500 text-lg">✕</button>
+          </div>
+          <ChatPanel
+            :messages="chatMessages"
+            :can-send="wsConnected"
+            @send="onChatSend"
+          />
+        </div>
+      </div>
+    </Teleport>
 
     <!-- Result Modal -->
     <ResultModal
@@ -94,6 +118,7 @@ const chatMessages = ref<Array<{id: number; type?: string; userId?: string; nick
 // WebSocket
 const wsConnected = ref(false)
 const showResult = ref(false)
+const showMobileChat = ref(false)
 
 const { connected, connect, disconnect, send } = useWebSocket(roomCode.value, userStore.token || '', {
   onGuessResult(data: any) {

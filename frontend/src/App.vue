@@ -19,15 +19,17 @@
 </template>
 
 <script setup lang="ts">
-import { useUserStore } from '@/stores/user'
+import { useUiStore } from '@/stores/ui'
 import { onMounted } from 'vue'
 
-const userStore = useUserStore()
+const uiStore = useUiStore()
 
 onMounted(() => {
-  // Check dark mode preference
-  if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
+  // Apply dark mode from store on startup
+  if (uiStore.darkMode) {
     document.documentElement.classList.add('dark')
+  } else if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
+    uiStore.darkMode = true
   }
 })
 </script>
