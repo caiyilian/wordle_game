@@ -7,12 +7,13 @@
       :letters="getLetters(row)"
       :colors="getColors(row)"
       :is-current="isCurrentRow(row)"
+      :revealing="revealingRow === row"
     />
   </div>
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
+import { ref, computed, watch } from 'vue'
 import { useGameStore } from '@/stores/game'
 import type { ColorResult } from '@/types/game'
 import GameRow from './GameRow.vue'
@@ -21,6 +22,16 @@ const gameStore = useGameStore()
 
 const wordLength = computed(() => gameStore.state.wordLength)
 const maxGuesses = computed(() => gameStore.state.maxGuesses)
+const revealingRow = ref(0)
+
+// Detect new guess → trigger reveal animation
+watch(() => gameStore.state.guesses.length, (newLen, oldLen) => {
+  if (newLen > (oldLen || 0)) {
+    revealingRow.value = newLen
+    // Clear after animation completes (delay per cell × wordLength)
+    setTimeout(() => { revealingRow.value = 0 }, gameStore.state.wordLength * 300 + 400)
+  }
+})
 
 function getLetters(rowIdx: number): string[] {
   const idx = rowIdx - 1
