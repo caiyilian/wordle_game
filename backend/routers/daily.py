@@ -48,7 +48,7 @@ def get_daily_word(
         "date": _get_daily_seed(),
         "word_bank": word_bank,
         "word_length": length,
-        "meaning_hint": meaning[:20] + "..." if len(meaning) > 20 else meaning,
+        "meaning_hint": meaning[:8] + "..." if len(meaning) > 8 else meaning,
         "total_words": len(words),
     }
 
