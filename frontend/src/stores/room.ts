@@ -22,4 +22,10 @@ export const useRoomStore = defineStore('room', () => {
   }
 
   return { currentRoom, players, setRoom }
+}, {
+  persist: {
+    key: 'wordle_room_store',
+    storage: localStorage,
+    pick: ['currentRoom'],
+  },
 })
