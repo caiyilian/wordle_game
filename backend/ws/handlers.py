@@ -317,5 +317,52 @@ async def _handle_guess(
                 .values(status="finished", finished_at=func.now())
             )
             await session.commit()
+
+            # Update user stats for all players in this game
+            from core.scoring import update_user_stats
+            from models import User
+
+            # Get unique users who made guesses
+            guesser_ids = set()
+            for ge in game_session.guess_history:
+                uid = ge.get("user_id")
+                if uid:
+                    guesser_ids.add(uid)
+
+            for uid in guesser_ids:
+                u_result = await session.execute(select(User).where(User.id == uid))
+                u = u_result.scalar_one_or_none()
+                if u is None:
+                    continue
+
+                # Count how many guesses this user made
+                user_guess_count = sum(
+                    1 for ge in game_session.guess_history if ge.get("user_id") == uid
+                )
+
+                current_stats = {
+                    "total_games": u.total_games,
+                    "wins": u.wins,
+                    "current_streak": u.current_streak,
+                    "max_streak": u.max_streak,
+                    "guess_distribution": u.guess_distribution or {},
+                    "total_score": 0,
+                }
+
+                is_winner = uid == winner_id if won else False
+                new_stats = update_user_stats(
+                    current_stats,
+                    won=is_winner,
+                    guesses_made=user_guess_count,
+                    word_length=game_session.word_length,
+                )
+
+                u.total_games = new_stats["total_games"]
+                u.wins = new_stats["wins"]
+                u.current_streak = new_stats["current_streak"]
+                u.max_streak = new_stats["max_streak"]
+                u.guess_distribution = new_stats["guess_distribution"]
+
+            await session.commit()
         finally:
             await session.close()
