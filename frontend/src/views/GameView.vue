@@ -104,6 +104,7 @@ import GameBoard from '@/components/GameBoard.vue'
 import VirtualKeyboard from '@/components/VirtualKeyboard.vue'
 import ChatPanel from '@/components/ChatPanel.vue'
 import ResultModal from '@/components/ResultModal.vue'
+import { useWordSound } from '@/composables/useWordSound'
 
 const route = useRoute()
 const router = useRouter()
@@ -119,11 +120,13 @@ const chatMessages = ref<Array<{id: number; type?: string; userId?: string; nick
 const wsConnected = ref(false)
 const showResult = ref(false)
 const showMobileChat = ref(false)
+const sound = useWordSound()
 
 const { connected, connect, disconnect, send } = useWebSocket(roomCode.value, userStore.token || '', {
   onGuessResult(data: any) {
     gameStore.submitGuess(data.colors)
     addChatMsg('system', data.nickname + ' guessed ' + data.word)
+    sound.playKeyClick()
   },
   onGameOver(data: any) {
     gameStore.state.status = 'finished'
@@ -133,6 +136,8 @@ const { connected, connect, disconnect, send } = useWebSocket(roomCode.value, us
     const winner = data.winner_id === userStore.user?.id ? 'You' : (data.winner_nickname || 'Someone')
     addChatMsg('system', 'Game over! Answer: ' + data.answer + ' (' + data.meaning + ') Winner: ' + winner)
     showResult.value = true
+    if (data.winner_id === userStore.user?.id) sound.playWin()
+    else sound.playLose()
   },
   onGameStart(data: any) {
     gameStore.state.status = 'playing'
