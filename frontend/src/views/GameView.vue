@@ -65,7 +65,7 @@
     <!-- Mobile chat drawer -->
     <Teleport to="body">
       <div v-if="showMobileChat" class="lg:hidden fixed inset-0 z-50 bg-black/40" @click="showMobileChat = false">
-        <div class="absolute bottom-0 left-0 right-0 bg-white dark:bg-gray-800 rounded-t-2xl p-4 max-h-[60vh] overflow-auto"
+        <div class="absolute bottom-0 left-0 right-0 bg-white dark:bg-gray-800 rounded-t-2xl p-4 pb-[env(safe-area-inset-bottom,16px)] max-h-[60vh] md:max-h-[50vh] overflow-auto"
              @click.stop>
           <div class="flex justify-between items-center mb-3">
             <h3 class="font-semibold text-gray-700 dark:text-gray-200">Chat</h3>
@@ -95,7 +95,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watchEffect, onMounted, onUnmounted, nextTick } from 'vue'
+import { ref, computed, watchEffect, watch, onMounted, onUnmounted, nextTick } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useUserStore } from '@/stores/user'
 import { useGameStore } from '@/stores/game'
@@ -122,7 +122,13 @@ const showResult = ref(false)
 const showMobileChat = ref(false)
 const sound = useWordSound()
 
+// Prevent background scrolling when chat drawer is open
+watch(showMobileChat, (open) => {
+  document.body.style.overflow = open ? 'hidden' : ''
+})
+
 const { connected, connect, disconnect, send } = useWebSocket(roomCode.value, userStore.token || '', {
+
   onGuessResult(data: any) {
     gameStore.submitGuess(data.colors)
     addChatMsg('system', data.nickname + ' guessed ' + data.word)
