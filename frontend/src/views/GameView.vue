@@ -55,6 +55,18 @@
         />
       </div>
     </div>
+
+    <!-- Result Modal -->
+    <ResultModal
+      v-if="showResult && gameStore.state.answer"
+      :is-win="gameStore.state.winnerId === userStore.user?.id"
+      :answer="gameStore.state.answer"
+      :meaning="gameStore.state.meaning"
+      :guess-count="gameStore.state.guesses.length"
+      :guesses="gameStore.state.guesses as any"
+      @close="showResult = false"
+      @play-again="startGame"
+    />
   </div>
 </template>
 
@@ -67,6 +79,7 @@ import { useWebSocket } from '@/composables/useWebSocket'
 import GameBoard from '@/components/GameBoard.vue'
 import VirtualKeyboard from '@/components/VirtualKeyboard.vue'
 import ChatPanel from '@/components/ChatPanel.vue'
+import ResultModal from '@/components/ResultModal.vue'
 
 const route = useRoute()
 const router = useRouter()
@@ -80,6 +93,7 @@ const chatMessages = ref<Array<{id: number; type?: string; userId?: string; nick
 
 // WebSocket
 const wsConnected = ref(false)
+const showResult = ref(false)
 
 const { connected, connect, disconnect, send } = useWebSocket(roomCode.value, userStore.token || '', {
   onGuessResult(data: any) {
@@ -93,6 +107,7 @@ const { connected, connect, disconnect, send } = useWebSocket(roomCode.value, us
     gameStore.state.winnerId = data.winner_id
     const winner = data.winner_id === userStore.user?.id ? 'You' : (data.winner_nickname || 'Someone')
     addChatMsg('system', 'Game over! Answer: ' + data.answer + ' (' + data.meaning + ') Winner: ' + winner)
+    showResult.value = true
   },
   onGameStart(data: any) {
     gameStore.state.status = 'playing'
