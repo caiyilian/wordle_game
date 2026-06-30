@@ -107,10 +107,15 @@ async def websocket_endpoint(
     except Exception:
         pass
     finally:
+        nickname = user_id
+        try:
+            nickname = await _get_nickname(user_id)
+        except Exception:
+            pass
         await manager.disconnect(room_id, user_id)
         await manager.broadcast(
             room_id,
-            _make_event("player_left", user_id=user_id),
+            _make_event("player_left", user_id=user_id, nickname=nickname),
         )
 
 
